@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <title>Document</title>
+  <script src="./jquery-3.3.1.min.js"></script>
+</head>
+<body>
+   <div id="per_box" style="width: 350px; height: 15px; background-color: #cccccc">
+   <div id="per" style="width: 0%; height: 100%; background-color: #007CD5"></div>
+   <span id="per_num"></span>
+</div>
+<br />
+<input type="file" name="file_tag" id="file_tag">
+<input type="button" value="上传" id ="upload_btn">
+<div id="show_img" style="width: 3px;height: 3px"></div>
+</body>
+</html>
+	<script>
+	$(document).ready(function () {
+        $("#upload_btn").click(function () {
+            var file=$("#file_tag")[0].files[0];
+            if(!file){
+                $('#file_tag').trigger("click");
+            }
+            var chunk;
+            upload(file);
+            function upload(file){
+                var every_size=1024;
+                var chunks = Math.ceil(file.size/every_size);//总页码
+                var filename=file.name;
+                var chunk=window.localStorage.getItem(filename) || 1;
+                    chunk=chunk >= chunks ? chunks :parseInt(chunk);
+                var offset=(chunk-1) * every_size;
+                var limit=offset > file.size ? file.size :chunk * every_size;
+                var per =(limit/file.size * 100).toFixed(2);
+                var data=file.slice(offset,limit);
+                var form=new FormData();
+                form.append('data',data);
+                form.append('filename',filename);
+                form.append('filesize',file.size);
+                var url="./xu.php";
+                $.ajax({
+                    type : "post",
+                    data : form,
+                    dataType : "json",
+                    url :url,
+                    processData: false,
+                    contentType: false,
+                    cache:false,
+                    success:function (res) {
+                        if(res.error == 0){
+                            //如果当前页大于等于总页数
+                            if(chunk >= chunks){
+                                per = 100 + "%";
+
+                                $("#per").css({width:per});
+                                $("#per_num").text(per);
+                                // console.log(res.data.path);
+
+                                var video ="<img src='"+res.data.path+"' controls = 'controls'>"
+                                $("#show_img").append(video);
+                            }else{
+                                chunk=chunk+1;
+                                per=per+"%";
+                                $("#per").css({width:per});
+                                $("#per_num").text(per);
+                                window.localStorage.setItem(filename,chunk);
+                                upload(file);
+                            }
+                        }
+                    }
+                    
+                })
+            }
+        })
+    })
+
+	</script>
